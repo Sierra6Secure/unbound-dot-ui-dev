@@ -31,7 +31,7 @@ def get_status():
             
             try:
                 client = docker.from_env()
-                container = client.containers.get("sierra6-unbound-dot-_unbound_1")
+                container = client.containers.get("sierra6-unbound-dot_unbound_1")
                 networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
                 
                 if networks:
@@ -84,7 +84,7 @@ def apply_config():
         if client:
             # Note: In Umbrel, the container name is usually [app-id]_unbound_1
             # We target the 'unbound' service specifically
-            container = client.containers.get("sierra6-unbound-dot-_unbound_1")
+            container = client.containers.get("sierra6-unbound-dot_unbound_1")
             container.restart()
             return jsonify({"status": "success", "message": "Config applied and Unbound restarted"})
         else:
@@ -102,7 +102,7 @@ def restore_default():
         shutil.copy(BACKUP_PATH, CONFIG_PATH)
         
         if client:
-            container = client.containers.get("sierra6-unbound-dot-_unbound_1")
+            container = client.containers.get("sierra6-unbound-dot_unbound_1")
             container.restart()
             return jsonify({"status": "success", "message": "Reverted and restarted"})
         return jsonify({"status": "error", "message": "Docker socket not available"}), 500
