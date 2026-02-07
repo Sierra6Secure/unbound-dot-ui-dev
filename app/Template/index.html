@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unbound DoT | Sierra6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            background-color: #020617; 
+            color: #f8fafc; 
+            font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+            font-size: 1.1rem;
+        }
+
+        .page-wrapper {
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            min-height: 100vh;
+        }
+
+        .card { 
+            background-color: #1e293b; 
+            border: 1px solid #334155; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .tooltip { position: relative; display: inline-block; cursor: help; }
+        .tooltip .tooltiptext {
+            visibility: hidden; width: 260px; background-color: #020617; color: #fff;
+            text-align: center; border: 1px solid #475569; border-radius: 8px;
+            padding: 14px; position: absolute; z-index: 50; bottom: 130%;
+            left: 50%; margin-left: -130px; opacity: 0; transition: opacity 0.2s;
+            font-size: 0.95rem; line-height: 1.4; pointer-events: none;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.6);
+        }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        
+        .side-border {
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, #3b82f6, transparent);
+            opacity: 0.2;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track { background: #334155; border-radius: 10px; height: 8px; }
+        input[type=range]::-webkit-slider-thumb { margin-top: -6px; width: 22px; height: 22px; }
+        
+        .disabled-btn { opacity: 0.3; cursor: not-allowed !important; filter: grayscale(1); }
+
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-down { animation: slideDown 0.4s cubic-bezier(0, 0, 0.2, 1) forwards; }
+    </style>
+</head>
+<body class="page-wrapper">
+
+    <div class="flex justify-center min-h-screen">
+        <div class="hidden lg:block side-border mr-8"></div>
+
+        <div class="w-full max-w-3xl px-6 py-12 space-y-8">
+            
+            <header class="flex justify-between items-end bg-slate-900/40 p-8 rounded-3xl border border-slate-800 shadow-inner">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-white tracking-tight">Unbound DoT</h1>
+                    <p class="text-blue-500 text-xs mt-2 font-black tracking-[0.3em] uppercase">Sierra6</p>
+                </div>
+                <div id="status-badge" class="flex items-center space-x-3 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/40">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-green-500 text-xs font-black uppercase tracking-widest">Active</span>
+                </div>
+            </header>
+
+            <div id="draft-alert" class="hidden animate-slide-down flex items-center justify-between p-5 bg-blue-600/10 border border-blue-500/30 rounded-2xl border-l-8 border-l-blue-600 shadow-lg">
+                <div class="flex items-center space-x-4 text-blue-400 font-bold text-base">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Configuration Saved. Ready to Apply.</span>
+                </div>
+                <button onclick="discardChanges()" class="text-slate-500 hover:text-white text-sm font-bold uppercase tracking-tighter underline">Discard</button>
+            </div>
+
+            <section class="card p-8 rounded-[2rem] space-y-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3 text-blue-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9h18" /></svg>
+                        <h2 class="text-lg font-black tracking-widest text-white uppercase">Primary Resolvers</h2>
+                    </div>
+                </div>
+                
+                <div class="space-y-6">
+                    <div class="relative">
+                        <select id="dns-presets" onchange="markUnsaved()" class="w-full bg-slate-900 border-2 border-slate-700 rounded-2xl p-5 text-white text-lg font-medium focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none cursor-pointer appearance-none transition-all">
+                            <option value="cloudflare">Cloudflare (1.1.1.1)</option>
+                            <option value="quad9">Quad9 (9.9.9.9)</option>
+                            <option value="google">Google (8.8.8.8)</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">▼</div>
+                    </div>
+
+                    <div id="custom-container" class="hidden space-y-6 pt-6 border-t-2 border-slate-800 animate-in fade-in zoom-in-95 duration-300">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Primary IP</label>
+                                <input type="text" oninput="markUnsaved()" placeholder="e.g. 1.1.1.1" class="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-base font-mono outline-none focus:border-blue-500 transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Secondary IP</label>
+                                <input type="text" oninput="markUnsaved()" placeholder="e.g. 1.0.0.1" class="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-4 text-base font-mono outline-none focus:border-blue-500 transition-all">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <details class="group card rounded-[2rem] shadow-xl overflow-hidden border border-slate-800 transition-all duration-300">
+                <summary class="flex items-center justify-between p-8 cursor-pointer hover:bg-slate-800/30 list-none">
+                    <div class="flex items-center space-x-4">
+                        <div class="p-2 bg-slate-900 rounded-lg group-open:bg-blue-600/20 transition-colors text-slate-400 group-open:text-blue-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                        </div>
+                        <span class="font-black text-xs uppercase tracking-[0.25em] text-slate-300">Advanced</span>
+                    </div>
+                    <span class="transition group-open:rotate-180 text-blue-500 text-sm">▼</span>
+                </summary>
+                
+                <div class="p-8 pt-2 space-y-8 border-t border-slate-800">
+                    <div class="bg-red-500/10 border-2 border-red-500/20 p-6 rounded-2xl flex items-start space-x-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                        <p class="text-sm text-red-200/80 leading-relaxed font-medium">
+                            <strong class="text-red-400 uppercase tracking-widest block mb-1">Warning:</strong>
+                            Modifying these settings can cause DNS resolution failure or app instability. Change only if you understand Unbound's directive logic.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <label class="flex items-center justify-between p-6 bg-slate-900/40 rounded-2xl border-2 border-slate-800 cursor-pointer hover:border-slate-600 transition-all">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-black text-slate-200 uppercase tracking-wider">Prefetching</span>
+                                <div class="tooltip text-slate-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span class="tooltiptext">Refreshes popular cache entries before they expire, ensuring zero-latency for common domains.</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" onchange="markUnsaved()" checked class="w-7 h-7 accent-blue-500 rounded-lg">
+                        </label>
+
+                        <label class="flex items-center justify-between p-6 bg-slate-900/40 rounded-2xl border-2 border-slate-800 cursor-pointer hover:border-slate-600 transition-all">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-black text-slate-200 uppercase tracking-wider">Serve Expired</span>
+                                <div class="tooltip text-slate-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span class="tooltiptext">If upstream servers are down, Unbound will serve records from its cache even if they are expired.</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" onchange="markUnsaved()" class="w-7 h-7 accent-blue-500 rounded-lg">
+                        </label>
+
+                        <label class="flex items-center justify-between p-6 bg-slate-900/40 rounded-2xl border-2 border-slate-800 cursor-pointer hover:border-slate-600 transition-all">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-black text-slate-200 uppercase tracking-wider">Privacy Hardening</span>
+                                <div class="tooltip text-slate-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span class="tooltiptext">Enables QNAME Minimisation, sending only the minimum necessary domain info to each authority server.</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" onchange="markUnsaved()" checked class="w-7 h-7 accent-blue-500 rounded-lg">
+                        </label>
+
+                        <label class="flex items-center justify-between p-6 bg-slate-900/40 rounded-2xl border-2 border-slate-800 cursor-pointer hover:border-slate-600 transition-all">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-black text-slate-200 uppercase tracking-wider">DNSSEC Enforcement</span>
+                                <div class="tooltip text-slate-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span class="tooltiptext">Validates cryptographic signatures on DNS records to prevent "Man-in-the-Middle" spoofing attacks.</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" onchange="markUnsaved()" checked class="w-7 h-7 accent-blue-500 rounded-lg">
+                        </label>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="text-xs font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Custom Directives</label>
+                        <textarea oninput="markUnsaved()" placeholder="e.g. msg-cache-size: 128m" class="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-6 text-sm font-mono text-blue-300 outline-none h-40 focus:border-blue-500 transition-all shadow-inner"></textarea>
+                    </div>
+
+                    <div class="p-8 bg-slate-900/40 rounded-2xl border-2 border-slate-800 space-y-6">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Logging Detail (Verbosity)</label>
+                            <span id="v-val" class="text-blue-400 font-mono text-3xl font-black">1</span>
+                        </div>
+                        <input type="range" id="v-slider" oninput="markUnsaved()" min="0" max="5" value="1" class="w-full appearance-none bg-transparent cursor-pointer accent-blue-500">
+                        <div class="flex justify-between text-[11px] font-black text-slate-600 uppercase tracking-tighter">
+                            <span>Off</span>
+                            <span>Standard</span>
+                            <span>Deep Debug</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <footer class="pt-8 border-t-2 border-slate-800/50 space-y-6">
+                <div class="flex items-center justify-between">
+                    <button onclick="revertToDefault()" class="text-red-500/50 hover:text-red-500 text-xs font-black uppercase tracking-widest transition-all">Revert to Default</button>
+                    <div class="flex space-x-5">
+                        <button onclick="saveDraft()" id="save-btn" class="px-10 py-5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl text-sm font-black tracking-widest transition-all border-2 border-slate-700 shadow-xl">SAVE</button>
+                        <button onclick="applyChanges()" id="apply-btn" class="px-14 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-sm font-black tracking-widest shadow-2xl shadow-blue-600/30 transition-all uppercase disabled-btn" disabled>APPLY</button>
+                    </div>
+                </div>
+                <p id="save-disclaimer" class="text-center text-[10px] font-bold text-slate-500 uppercase tracking-[0.25em] transition-opacity duration-300">
+                    Settings must be saved before they can be applied.
+                </p>
+            </footer>
+        </div>
+
+        <div class="hidden lg:block side-border ml-8"></div>
+    </div>
+
+    <script>
+        let hasUnsavedChanges = false;
+        let draftSaved = false;
+
+        function markUnsaved() {
+            hasUnsavedChanges = true;
+            draftSaved = false;
+            const applyBtn = document.getElementById('apply-btn');
+            const disclaimer = document.getElementById('save-disclaimer');
+            applyBtn.classList.add('disabled-btn');
+            applyBtn.disabled = true;
+            disclaimer.classList.remove('opacity-0');
+            document.getElementById('save-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('draft-alert').classList.add('hidden');
+        }
+
+        function saveDraft() {
+            hasUnsavedChanges = false;
+            draftSaved = true;
+            const applyBtn = document.getElementById('apply-btn');
+            const disclaimer = document.getElementById('save-disclaimer');
+            document.getElementById('draft-alert').classList.remove('hidden');
+            applyBtn.classList.remove('disabled-btn');
+            applyBtn.disabled = false;
+            disclaimer.classList.add('opacity-0');
+            document.getElementById('save-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function applyChanges() {
+            const btn = document.getElementById('apply-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "UPDATING...";
+            btn.classList.add('opacity-50');
+            setTimeout(() => {
+                btn.innerText = "RESTARTING...";
+                setTimeout(() => {
+                    btn.innerText = "SUCCESS!";
+                    btn.classList.replace('bg-blue-600', 'bg-green-600');
+                    document.getElementById('draft-alert').classList.add('hidden');
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.classList.replace('bg-green-600', 'bg-blue-600');
+                        btn.classList.add('disabled-btn');
+                        btn.disabled = true;
+                        document.getElementById('save-disclaimer').classList.remove('opacity-0');
+                        draftSaved = false;
+                    }, 2000);
+                }, 1500);
+            }, 1000);
+        }
+
+        function revertToDefault() {
+            if(confirm("ALERT: This will restore factory defaults and restart the service. Continue?")) {
+                location.reload();
+            }
+        }
+
+        document.getElementById('dns-presets').addEventListener('change', (e) => {
+            document.getElementById('custom-container').classList.toggle('hidden', e.target.value !== 'custom');
+            markUnsaved();
+        });
+
+        const slider = document.getElementById('v-slider');
+        slider.oninput = () => {
+            document.getElementById('v-val').innerText = slider.value;
+            markUnsaved();
+        };
+    </script>
+</body>
+</html>
