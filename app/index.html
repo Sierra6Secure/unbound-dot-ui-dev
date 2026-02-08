@@ -90,6 +90,36 @@
             </div>
         </header>
 
+            <section class="space-y-4 animate-slide-down">
+                <div class="flex items-center justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-800 shadow-lg">
+                    <button onclick="revertToDefault()" class="text-red-500/60 hover:text-red-500 text-[10px] font-black uppercase tracking-widest transition-all">
+                        Revert to Default
+                    </button>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="saveDraft()" id="save-btn" 
+                            class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-black tracking-widest transition-all border border-slate-700">
+                            SAVE
+                        </button>
+                        <button onclick="applyChanges()" id="apply-btn" 
+                            class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black tracking-widest shadow-lg shadow-blue-600/20 transition-all uppercase disabled-btn" disabled>
+                            APPLY
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center space-y-2">
+                    <p id="save-disclaimer" class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] transition-opacity duration-300">
+                        Settings must be saved before they can be applied.
+                    </p>
+                    
+                    <div id="draft-alert" class="hidden flex items-center space-x-4 px-4 py-2 bg-blue-600/10 border border-blue-500/30 rounded-full">
+                        <span class="text-blue-400 font-bold text-[11px] uppercase tracking-tight">Configuration Saved. Ready to Apply.</span>
+                        <button onclick="discardChanges()" class="text-slate-500 hover:text-white text-[10px] font-bold uppercase underline">Discard</button>
+                    </div>
+                </div>
+            </section>
+
             <div id="draft-alert" class="hidden animate-slide-down flex items-center justify-between p-5 bg-blue-600/10 border border-blue-500/30 rounded-2xl border-l-8 border-l-blue-600 shadow-lg">
                 <div class="flex items-center space-x-4 text-blue-400 font-bold text-base">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -241,15 +271,9 @@
             </details>
 
             <footer class="pt-8 border-t-2 border-slate-800/50 space-y-6">
-                <div class="flex items-center justify-between">
-                    <button onclick="revertToDefault()" class="text-red-500/50 hover:text-red-500 text-xs font-black uppercase tracking-widest transition-all">Revert to Default</button>
-                    <div class="flex space-x-5">
-                        <button onclick="saveDraft()" id="save-btn" class="px-10 py-5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl text-sm font-black tracking-widest transition-all border-2 border-slate-700 shadow-xl">SAVE</button>
-                        <button onclick="applyChanges()" id="apply-btn" class="px-14 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-sm font-black tracking-widest shadow-2xl shadow-blue-600/30 transition-all uppercase disabled-btn" disabled>APPLY</button>
-                    </div>
-                </div>
-                <p id="save-disclaimer" class="text-center text-xs font-black text-white/90 uppercase tracking-[0.2em] transition-opacity duration-300 drop-shadow-sm">
-                    Settings must be saved before they can be applied.
+
+                <p id="PLACEHOLDERTEXT" class="text-center text-xs font-black text-white/90 uppercase tracking-[0.2em] transition-opacity duration-300 drop-shadow-sm">
+                    ADD NEW FOOTER STUFF HERE
                 </p>
             </footer>
         </div>
