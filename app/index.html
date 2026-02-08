@@ -294,6 +294,35 @@
                     dot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
                     ping.className = "hidden"; // Hide the pulse when offline
                 }
+
+                // --- NEW: Update Dashboard Stats ---
+                if (data.stats) {
+                    const totalEl = document.getElementById('stat-total');
+                    const newTotal = data.stats.total_queries || 0;
+                    
+                    // Basic formatting (adds commas, e.g., 1,234)
+                    totalEl.innerText = newTotal.toLocaleString();
+                }
+
+                // --- UPDATE CACHE HITS ---
+                if (data.stats) {
+                    const totalQueries = data.stats.total_queries || 0;
+                    const cacheHits = data.stats.cache_hits || 0;
+
+                    // 1. Update the Total Queries (from previous step)
+                    document.getElementById('stat-total').innerText = totalQueries.toLocaleString();
+
+                    // 2. Update the Cache Hits Number
+                    document.getElementById('stat-hits').innerText = cacheHits.toLocaleString();
+                    
+                    // 3. Calculate and Update Percentage
+                    let hitPercent = 0;
+                    if (totalQueries > 0) {
+                        hitPercent = ((cacheHits / totalQueries) * 100).toFixed(1);
+                    }
+                    document.getElementById('stat-hit-percent').innerText = `${hitPercent}%`;
+                }
+
             } catch (e) { 
                 console.error("Status check failed", e); 
                 // Optional: Reset to yellow if the network request itself fails
@@ -380,7 +409,12 @@
 forward-zone:
     name: "."
     forward-first: no
-    forward-tls-upstream: yes\n`;
+    forward-tls-upstream: yes
+
+remote-control:
+    control-enable: yes
+    control-interface: 127.0.0.1
+    control-use-cert: no\n`;
 
             if (dnsType === 'cloudflare') {
                 newConfig += `    forward-addr: 1.1.1.1@853#cloudflare-dns.com\n    forward-addr: 1.0.0.1@853#cloudflare-dns.com`;

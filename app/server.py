@@ -2,6 +2,7 @@ import os
 import socket
 import docker
 import shutil
+import re
 from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__)
@@ -28,6 +29,8 @@ def get_status():
     try:
         with socket.create_connection(("unbound", 53), timeout=2):
             ip_val = "Lookup Failed"
+            total_queries = 0
+            total_hits = 0
             
             try:
                 client = docker.from_env()
@@ -44,16 +47,38 @@ def get_status():
                 else:
                     print("WARN: No networks found attached to Unbound container.")
 
+                # Get Stats from Unbound
+                stats_res = container.exec_run("unbound-control stats_noreset")
+                stats_output = stats_res.output.decode('utf-8')
+                
+                q_match = re.search(r"total\.num\.queries=(\d+)", stats_output) # Queries
+                h_match = re.search(r"total\.num\.cachehits=(\d+)", stats_output) # Cache Hits
+                
+                if q_match: total_queries = int(q_match.group(1))
+                if h_match: total_hits = int(h_match.group(1))
+
             except Exception as e:
                 print(f"ERROR: Docker API lookup failed: {e}")
                 pass
 
-            return jsonify({"status": "running", "ip": ip_val})
+            return jsonify({
+                "status": "running", 
+                "ip": ip_val, 
+                "stats": {
+                    "total_queries": total_queries,
+                    "cache_hits": total_hits
+                }
+            })
             
     except Exception:
-        # No need to print here as 'stopped' is a standard state, 
-        # but you could add a print(f"DEBUG: Service unreachable: {e}") if desired.
-        return jsonify({"status": "stopped", "ip": None})
+        return jsonify({
+            "status": "stopped", 
+            "ip": None, 
+            "stats": {
+                "total_queries": 0,
+                "cache_hits": 0
+            }
+        })
     
 @app.route('/api/get-config', methods=['GET'])
 def get_config():
