@@ -469,19 +469,14 @@
 forward-zone:
     name: "."
     forward-first: no
-    forward-tls-upstream: yes
-
-remote-control:
-    control-enable: yes
-    control-interface: 127.0.0.1
-    control-use-cert: no\n`;
+    forward-tls-upstream: yes\n`;
 
             if (dnsType === 'cloudflare') {
-                newConfig += `    forward-addr: 1.1.1.1@853#cloudflare-dns.com\n    forward-addr: 1.0.0.1@853#cloudflare-dns.com`;
+                newConfig += `    forward-addr: 1.1.1.1@853#cloudflare-dns.com\n    forward-addr: 1.0.0.1@853#cloudflare-dns.com\n\n`;
             } else if (dnsType === 'quad9') {
-                newConfig += `    forward-addr: 9.9.9.9@853#dns.quad9.net\n    forward-addr: 149.112.112.112@853#dns.quad9.net`;
+                newConfig += `    forward-addr: 9.9.9.9@853#dns.quad9.net\n    forward-addr: 149.112.112.112@853#dns.quad9.net\n\n`;
             } else if (dnsType === 'google') {
-                newConfig += `    forward-addr: 8.8.8.8@853#dns.google\n    forward-addr: 8.8.4.4@853#dns.google`;
+                newConfig += `    forward-addr: 8.8.8.8@853#dns.google\n    forward-addr: 8.8.4.4@853#dns.google\n\n`;
             } else if (dnsType === 'custom') {
                 const primary = document.getElementById('custom-ip-primary').value.trim();
                 const secondary = document.getElementById('custom-ip-secondary').value.trim();
@@ -491,11 +486,17 @@ remote-control:
                     return; 
                 }
 
-                newConfig += `    forward-addr: ${primary}@853\n`;
+                newConfig += `    forward-addr: ${primary}@853\n\n`;
                 if (secondary) {
-                    newConfig += `    forward-addr: ${secondary}@853`;
+                    newConfig += `    forward-addr: ${secondary}@853\n\n`;
                 }
             }
+
+            newConfig += 
+`remote-control:
+    control-enable: yes
+    control-interface: 127.0.0.1
+    control-use-cert: no\n`;
 
             lastSavedContent = newConfig; // Save to memory
             
