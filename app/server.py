@@ -27,56 +27,57 @@ def index():
 def get_status():
     """Checks if Unbound is responding and attempts to find its real IP"""
     try:
-        with socket.create_connection(("unbound", 53), timeout=2):
-            ip_val = "Lookup Failed"
-            total_queries = 0
-            total_hits = 0
-            avg_latency = 0
-            uptime = 0
+        client = docker.from_env()
+        container = client.containers.get("sierra6-unbound-dot_unbound_1")
+
+        status_res = container.exec_run("unbound-control status")
+        if status_res.exit_code != 0 or "is running" not in status_res.output.decode():
+            raise Exception("Unbound is not running")
+
+        ip_val = "Lookup Failed"
+        total_queries = 0
+        total_hits = 0
+        avg_latency = 0
+        uptime = 0
+        
+        try:
+            client = docker.from_env()
+            container = client.containers.get("sierra6-unbound-dot_unbound_1")
+            networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
             
-            try:
-                client = docker.from_env()
-                container = client.containers.get("sierra6-unbound-dot_unbound_1")
-                networks = container.attrs.get('NetworkSettings', {}).get('Networks', {})
-                
-                if networks:
-                    found_ip = next(iter(networks.values())).get('IPAddress')
-                    if found_ip:
-                        ip_val = found_ip
-                        print(f"INFO: Successfully retrieved Unbound IP: {ip_val}")
-                    else:
-                        print("WARN: Network found, but IPAddress field is empty.")
-                else:
-                    print("WARN: No networks found attached to Unbound container.")
+            if networks:
+                found_ip = next(iter(networks.values())).get('IPAddress')
+                if found_ip:
+                    ip_val = found_ip
 
-                # Get Stats from Unbound
-                stats_res = container.exec_run("unbound-control stats_noreset")
-                stats_output = stats_res.output.decode('utf-8')
+            # Get Stats from Unbound
+            stats_res = container.exec_run("unbound-control stats_noreset")
+            stats_output = stats_res.output.decode('utf-8')
 
-                q_match = re.search(r"total\.num\.queries=\s*(\d+)", stats_output) # Queries
-                h_match = re.search(r"total\.num\.cachehits=\s*(\d+)", stats_output) # Cache Hits
-                avg_match = re.search(r"total\.recursion\.time\.avg=\s*(\d+\.\d+)", stats_output) # Average ms
-                up_match = re.search(r"time\.up=\s*(\d+\.\d+)", stats_output) # New Uptime Regex
-                
-                if q_match: total_queries = int(q_match.group(1))
-                if h_match: total_hits = int(h_match.group(1))
-                if avg_match: avg_latency = round(float(avg_match.group(1)) * 1000, 1)
-                if up_match: uptime = float(up_match.group(1)) # Capture uptime as float
+            q_match = re.search(r"total\.num\.queries=\s*(\d+)", stats_output) # Queries
+            h_match = re.search(r"total\.num\.cachehits=\s*(\d+)", stats_output) # Cache Hits
+            avg_match = re.search(r"total\.recursion\.time\.avg=\s*(\d+\.\d+)", stats_output) # Average ms
+            up_match = re.search(r"time\.up=\s*(\d+\.\d+)", stats_output) # New Uptime Regex
+            
+            if q_match: total_queries = int(q_match.group(1))
+            if h_match: total_hits = int(h_match.group(1))
+            if avg_match: avg_latency = round(float(avg_match.group(1)) * 1000, 1)
+            if up_match: uptime = float(up_match.group(1)) # Capture uptime as float
 
-            except Exception as e:
-                print(f"ERROR: Docker API lookup failed: {e}")
-                pass
+        except Exception as e:
+            print(f"ERROR: Docker API lookup failed: {e}")
+            pass
 
-            return jsonify({
-                "status": "running", 
-                "ip": ip_val, 
-                "stats": {
-                    "total_queries": total_queries,
-                    "cache_hits": total_hits,
-                    "avg_latency": avg_latency,
-                    "uptime": uptime
-                }
-            })
+        return jsonify({
+            "status": "running", 
+            "ip": ip_val, 
+            "stats": {
+                "total_queries": total_queries,
+                "cache_hits": total_hits,
+                "avg_latency": avg_latency,
+                "uptime": uptime
+            }
+        })
             
     except Exception:
         return jsonify({
