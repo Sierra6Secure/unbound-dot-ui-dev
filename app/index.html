@@ -95,7 +95,6 @@
             </section>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
                 <aside class="lg:col-span-4 space-y-4 lg:sticky lg:top-8">
                     <h2 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Dashboard</h2>
                     <div class="grid grid-cols-2 lg:grid-cols-1 gap-4">
@@ -103,6 +102,7 @@
                             <p class="text-[9px] font-black text-slate-500 uppercase">Total Queries</p>
                             <p id="stat-total" class="text-3xl font-mono font-black text-white mt-1">--</p>
                         </div>
+
                         <div class="card p-5 rounded-2xl border-b-2 border-b-green-600/30">
                             <p class="text-[9px] font-black text-slate-500 uppercase">Cache Hits</p>
                             <div class="flex items-baseline space-x-2">
@@ -110,13 +110,18 @@
                                 <span class="text-green-500 text-[10px] font-bold" id="stat-hit-percent">0%</span>
                             </div>
                         </div>
+
                         <div class="card p-5 rounded-2xl border-b-2 border-b-yellow-600/30">
                             <p class="text-[9px] font-black text-slate-500 uppercase">Avg Latency</p>
-                            <p id="stat-latency" class="text-3xl font-mono font-black text-white mt-1">--</p>
+                            <div class="flex items-baseline space-x-1">
+                                <p id="stat-latency" class="text-3xl font-mono font-black text-white mt-1">--</p>
+                                <span class="text-yellow-500 text-[10px] font-bold uppercase">ms</span>
+                            </div>
                         </div>
+
                         <div class="card p-5 rounded-2xl border-b-2 border-b-purple-600/30">
                             <p class="text-[9px] font-black text-slate-500 uppercase">Up Time</p>
-                            <p id="stat-uptime" class="text-sm font-mono font-bold text-slate-300 mt-2 uppercase">Pending...</p>
+                            <p id="stat-uptime" class="text-lg font-mono font-black text-purple-400 mt-1 uppercase tracking-tighter">--</p>
                         </div>
                     </div>
                 </aside>
@@ -211,6 +216,19 @@
         <div class="hidden xl:block side-border ml-8"></div>
     </div>
     <script>
+        function formatUptime(seconds) {
+            const s = Math.floor(seconds);
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+
+            if (d > 0) return `${d}d ${h}h ${m}m`;
+            if (h > 0) return `${h}h ${m}m`;
+            if (m > 0) return `${m}m ${sec}s`;
+            return `${sec}s`;
+        }
+
         let hasUnsavedChanges = false;
         let lastSavedContent = ""; // Stores the config to be applied
 
@@ -274,58 +292,50 @@
                 const badgeText = document.getElementById('status-text');
                 const dot = document.getElementById('status-dot');
                 const ping = document.getElementById('status-ping');
+                const ipDisplay = document.getElementById('ip-display');
 
                 if (data.status === 'running') {
+
+                    // 1. Update Badge UI
                     badgeText.innerText = "Active";
-                    // Update the pill to Green style
                     badge.className = "flex items-center space-x-3 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/40 transition-all duration-500";
                     badgeText.className = "text-xs font-black uppercase tracking-widest text-green-500";
                     dot.className = "relative inline-flex rounded-full h-3 w-3 bg-green-500";
                     ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
-
-                    // Update the IP
-                    const ipDisplay = document.getElementById('ip-display');
                     ipDisplay.innerText = `IP: ${data.ip || 'Not Found'}`;
+
+                    // 2. Update All Stats
+                    const stats = data.stats || {};
+                    const totalQueries = stats.total_queries || 0;
+                    const cacheHits = stats.cache_hits || 0;
+
+                    document.getElementById('stat-total').innerText = totalQueries.toLocaleString();
+                    document.getElementById('stat-hits').innerText = cacheHits.toLocaleString();
+                    document.getElementById('stat-latency').textContent = stats.avg_latency || '0';
+
+                    // Percentage Calculation
+                    let hitPercent = totalQueries > 0 ? ((cacheHits / totalQueries) * 100).toFixed(1) : 0;
+                    document.getElementById('stat-hit-percent').innerText = `${hitPercent}%`;
+
+                    // Uptime Calculation
+                    if (stats.uptime !== undefined) {
+                        document.getElementById('stat-uptime').textContent = formatUptime(stats.uptime);
+                    }
                 } else {
+                    // 3. Fallback for 'Offline' or 'Stopped'
                     badgeText.innerText = "Offline";
-                    // Update the pill to Red style
                     badge.className = "flex items-center space-x-3 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/40 transition-all duration-500";
                     badgeText.className = "text-xs font-black uppercase tracking-widest text-red-500";
                     dot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
-                    ping.className = "hidden"; // Hide the pulse when offline
+                    ping.className = "hidden";
+                    ipDisplay.innerText = "IP: OFFLINE";
+
+                    // Clear stats so the user doesn't see stale data
+                    document.getElementById('stat-latency').textContent = "--";
+                    document.getElementById('stat-uptime').textContent = "Offline";
                 }
-
-                // --- NEW: Update Dashboard Stats ---
-                if (data.stats) {
-                    const totalEl = document.getElementById('stat-total');
-                    const newTotal = data.stats.total_queries || 0;
-                    
-                    // Basic formatting (adds commas, e.g., 1,234)
-                    totalEl.innerText = newTotal.toLocaleString();
-                }
-
-                // --- UPDATE CACHE HITS ---
-                if (data.stats) {
-                    const totalQueries = data.stats.total_queries || 0;
-                    const cacheHits = data.stats.cache_hits || 0;
-
-                    // 1. Update the Total Queries (from previous step)
-                    document.getElementById('stat-total').innerText = totalQueries.toLocaleString();
-
-                    // 2. Update the Cache Hits Number
-                    document.getElementById('stat-hits').innerText = cacheHits.toLocaleString();
-                    
-                    // 3. Calculate and Update Percentage
-                    let hitPercent = 0;
-                    if (totalQueries > 0) {
-                        hitPercent = ((cacheHits / totalQueries) * 100).toFixed(1);
-                    }
-                    document.getElementById('stat-hit-percent').innerText = `${hitPercent}%`;
-                }
-
             } catch (e) { 
-                console.error("Status check failed", e); 
-                // Optional: Reset to yellow if the network request itself fails
+                console.error("Critical: Network/API failure during checkStatus", e); 
             }
         }
 
@@ -347,7 +357,7 @@
             const verbosity = document.getElementById('v-slider').value;
             const dnsType = document.getElementById('dns-presets').value;
             const checks = document.querySelectorAll('input[type="checkbox"]');
-            const customDirectives = document.querySelector('textarea').value.trim(); // Get the custom text
+            const customDirectives = document.getElementById('custom-directives').value;
 
             // --- Validation for Custom IP ---
             if (dnsType === 'custom') {
