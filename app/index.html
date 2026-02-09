@@ -338,6 +338,17 @@
                         const customPart = parts[1].split('forward-zone:')[0].trim();
                         document.getElementById('custom-directives').value = customPart;
                     }
+                    if (conf.includes('# Custom Settings')) {
+                        const parts = conf.split('# Custom Settings');
+                        const rawCustomPart = parts[1].split('forward-zone:')[0].trim();
+
+                        const cleanCustomPart = rawCustomPart
+                            .split('\n')
+                            .map(line => line.trim())
+                            .join('\n');
+
+                        document.getElementById('custom-directives').value = cleanCustomPart;
+                    }
                 }
             } catch (err) { console.error("Load failed", err); }
         }
@@ -416,7 +427,18 @@
         function saveDraft() {
             const verbosity = document.getElementById('v-slider').value;
             const dnsType = document.getElementById('dns-presets').value;
-            const customDirectives = document.getElementById('custom-directives').value;
+           // const customDirectives = document.getElementById('custom-directives').value;
+
+
+            // Capture the raw textarea input
+            const rawDirectives = document.getElementById('custom-directives').value;
+            
+            // Process the input: Split by line, trim whitespace, and re-indent with 4 spaces
+            const formattedDirectives = rawDirectives
+                .split('\n')
+                .filter(line => line.trim() !== "") // Skip empty lines
+                .map(line => `    ${line.trim()}`)   // Add exactly 4 spaces
+                .join('\n');
             
             // Construct the config string (Your specific Sierra6 hardening)
             let newConfig = `server:
@@ -464,7 +486,7 @@
     tls-upstream: yes
 
     # Custom Settings
-    ${customDirectives}
+${formattedDirectives}
 
 forward-zone:
     name: "."
@@ -472,11 +494,11 @@ forward-zone:
     forward-tls-upstream: yes\n`;
 
             if (dnsType === 'cloudflare') {
-                newConfig += `    forward-addr: 1.1.1.1@853#cloudflare-dns.com\n    forward-addr: 1.0.0.1@853#cloudflare-dns.com\n\n`;
+                newConfig += `    forward-addr: 1.1.1.1@853#cloudflare-dns.com\n    forward-addr: 1.0.0.1@853#cloudflare-dns.com\n`;
             } else if (dnsType === 'quad9') {
-                newConfig += `    forward-addr: 9.9.9.9@853#dns.quad9.net\n    forward-addr: 149.112.112.112@853#dns.quad9.net\n\n`;
+                newConfig += `    forward-addr: 9.9.9.9@853#dns.quad9.net\n    forward-addr: 149.112.112.112@853#dns.quad9.net\n`;
             } else if (dnsType === 'google') {
-                newConfig += `    forward-addr: 8.8.8.8@853#dns.google\n    forward-addr: 8.8.4.4@853#dns.google\n\n`;
+                newConfig += `    forward-addr: 8.8.8.8@853#dns.google\n    forward-addr: 8.8.4.4@853#dns.google\n`;
             } else if (dnsType === 'custom') {
                 const primary = document.getElementById('custom-ip-primary').value.trim();
                 const secondary = document.getElementById('custom-ip-secondary').value.trim();
@@ -486,14 +508,14 @@ forward-zone:
                     return; 
                 }
 
-                newConfig += `    forward-addr: ${primary}@853\n\n`;
+                newConfig += `    forward-addr: ${primary}@853\n`;
                 if (secondary) {
-                    newConfig += `    forward-addr: ${secondary}@853\n\n`;
+                    newConfig += `    forward-addr: ${secondary}@853\n`;
                 }
             }
 
             newConfig += 
-`remote-control:
+`\nremote-control:
     control-enable: yes
     control-interface: 127.0.0.1
     control-use-cert: no\n`;
