@@ -281,10 +281,13 @@
             const m = Math.floor((s % 3600) / 60);
             const sec = s % 60;
 
-            if (d > 0) return `${d}d ${h}h ${m}m`;
-            if (h > 0) return `${h}h ${m}m`;
-            if (m > 0) return `${m}m ${sec}s`;
-            return `${sec}s`;
+            // Convert to 00 format
+            const dd = String(d).padStart(2, '0');
+            const hh = String(h).padStart(2, '0');
+            const mm = String(m).padStart(2, '0');
+            const ss = String(sec).padStart(2, '0');
+
+            return `${dd}:${hh}:${mm}:${ss}`;
         }
 
         let hasUnsavedChanges = false;
